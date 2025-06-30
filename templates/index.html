@@ -254,7 +254,7 @@
         const li = document.createElement('li');
         li.innerHTML = `${p.name} - €${parseFloat(p.price).toFixed(2)}`;
 
-        // Aggiungi bottone aggiungi al carrello sempre visibile
+        // Bottone aggiungi sempre visibile, ma fa alert se non loggato
         const btn = document.createElement('button');
         btn.textContent = 'Aggiungi al carrello';
         btn.className = 'add-btn';
@@ -288,7 +288,8 @@
         alert('Sessione scaduta o non autorizzato. Effettua nuovamente il login.');
         logoutBtn.click();
       } else {
-        alert('Errore durante aggiunta al carrello.');
+        const err = await response.json();
+        alert('Errore: ' + (err.error || 'Durante aggiunta al carrello.'));
       }
     }
 
@@ -305,17 +306,20 @@
         return;
       }
 
-      const items = await response.json();
+      const data = await response.json();
+
+      const items = data.items;
+      const total = data.total;
+
       cartList.innerHTML = '';
 
-      let total = 0;
       items.forEach(item => {
         const li = document.createElement('li');
         li.textContent = `${item.product.name} × ${item.quantity}`;
         cartList.appendChild(li);
-        total += parseFloat(item.product.price) * item.quantity;
       });
-      cartTotal.textContent = `Totale: €${total.toFixed(2)}`;
+
+      cartTotal.textContent = `Totale: €${parseFloat(total).toFixed(2)}`;
     }
 
     updateLoginUI(!!token);
