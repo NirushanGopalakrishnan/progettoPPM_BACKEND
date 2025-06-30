@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <title>E-commerce Minimal Client</title>
+</head>
+<body>
+    <h1>Benvenuto nel Client E-commerce</h1>
+
+    <section id="login-section">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Password" />
+        <button id="login-btn">Login</button>
+        <p id="login-msg"></p>
+    </section>
+
+    <section id="products-section" style="display:none;">
+        <h2>Prodotti</h2>
+        <ul id="products-list"></ul>
+    </section>
+
+    <script>
+        const loginBtn = document.getElementById('login-btn');
+        const loginMsg = document.getElementById('login-msg');
+        const productsSection = document.getElementById('products-section');
+        const productsList = document.getElementById('products-list');
+
+        let token = null;
+
+        loginBtn.onclick = async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Chiamata API per login e ottenere token
+            try {
+                const response = await fetch('/api/users/token/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                if (!response.ok) throw new Error('Login fallito');
+
+                const data = await response.json();
+                token = data.access;
+                loginMsg.textContent = 'Login riuscito!';
+                loadProducts();
+            } catch (e) {
+                loginMsg.textContent = 'Errore: ' + e.message;
+            }
+        };
+
+        async function loadProducts() {
+            productsSection.style.display = 'block';
+
+            const response = await fetch('/api/products/', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                productsList.innerHTML = '<li>Errore nel caricamento prodotti</li>';
+                return;
+            }
+
+            const products = await response.json();
+            productsList.innerHTML = '';
+            products.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.name} - €${p.price}`;
+                productsList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
+c

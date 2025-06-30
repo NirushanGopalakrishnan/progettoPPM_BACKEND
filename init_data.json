@@ -1,0 +1,12 @@
+[
+  {
+    "model": "store.product",
+    "pk": 1,
+    "fields": {
+      "name": "Laptop",
+      "price": "999.99",
+      "stock": 10,
+      "active": true
+    }
+  }
+]
