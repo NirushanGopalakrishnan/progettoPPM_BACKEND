@@ -8,9 +8,12 @@
       font-family: 'Segoe UI', Tahoma, sans-serif;
       background: #f5f5f5;
       color: #333;
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
     header {
@@ -23,6 +26,7 @@
     h1 {
       font-size: 24px;
       color: #007bff;
+      margin: 0;
     }
 
     #login-section {
@@ -36,6 +40,7 @@
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 4px;
+      width: 140px;
     }
 
     button {
@@ -47,45 +52,11 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     button:hover {
       background-color: #0056b3;
-    }
-
-    #products-section, #cart-section {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    li {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #f1f1f1;
-      border-radius: 4px;
-    }
-
-    #login-msg {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    .add-btn {
-      background-color: #28a745;
-    }
-
-    .add-btn:hover {
-      background-color: #1e7e34;
     }
 
     #logout-btn {
@@ -94,6 +65,76 @@
 
     #logout-btn:hover {
       background-color: #a71d2a;
+    }
+
+    #login-msg {
+      margin-top: 10px;
+      font-weight: bold;
+      height: 20px;
+      color: red;
+    }
+
+    main {
+      display: flex;
+      gap: 20px;
+      flex-grow: 1;
+    }
+
+    #products-section, #cart-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      flex: 1;
+      overflow-y: auto;
+      max-height: 70vh;
+    }
+
+    #cart-section {
+      max-width: 320px;
+      display: none; /* Visibile solo dopo login */
+      flex-shrink: 0;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f1f1f1;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .add-btn {
+      background-color: #28a745;
+      font-size: 14px;
+      padding: 6px 12px;
+      font-weight: 600;
+    }
+
+    .add-btn:hover {
+      background-color: #1e7e34;
+    }
+
+    #cart-total {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 18px;
+      text-align: right;
     }
   </style>
 </head>
@@ -111,15 +152,18 @@
 
   <p id="login-msg"></p>
 
-  <section id="products-section">
-    <h2>Prodotti</h2>
-    <ul id="products-list"></ul>
-  </section>
+  <main>
+    <section id="products-section">
+      <h2>Prodotti</h2>
+      <ul id="products-list"></ul>
+    </section>
 
-  <section id="cart-section" style="display:none;">
-    <h2>Carrello</h2>
-    <ul id="cart-list"></ul>
-  </section>
+    <section id="cart-section">
+      <h2>Carrello</h2>
+      <ul id="cart-list"></ul>
+      <div id="cart-total">Totale: €0.00</div>
+    </section>
+  </main>
 
   <script>
     const loginBtn = document.getElementById('login-btn');
@@ -130,6 +174,7 @@
     const productsList = document.getElementById('products-list');
     const cartSection = document.getElementById('cart-section');
     const cartList = document.getElementById('cart-list');
+    const cartTotal = document.getElementById('cart-total');
 
     let token = localStorage.getItem('token') || null;
 
@@ -149,6 +194,8 @@
         passwordField.style.display = 'inline-block';
         cartSection.style.display = 'none';
         loginMsg.textContent = '';
+        cartList.innerHTML = '';
+        cartTotal.textContent = 'Totale: €0.00';
       }
     }
 
@@ -188,7 +235,6 @@
       localStorage.removeItem('token');
       updateLoginUI(false);
       productsList.innerHTML = '';
-      cartList.innerHTML = '';
       loadProducts();
     };
 
@@ -208,24 +254,24 @@
         const li = document.createElement('li');
         li.innerHTML = `${p.name} - €${parseFloat(p.price).toFixed(2)}`;
 
-        if (token) {
-          const btn = document.createElement('button');
-          btn.textContent = 'Aggiungi al carrello';
-          btn.className = 'add-btn';
-          btn.onclick = () => addToCart(p.id);
-          li.appendChild(btn);
-        }
+        // Aggiungi bottone aggiungi al carrello sempre visibile
+        const btn = document.createElement('button');
+        btn.textContent = 'Aggiungi al carrello';
+        btn.className = 'add-btn';
+        btn.onclick = () => {
+          if (!token) {
+            alert('Devi effettuare il login per aggiungere prodotti al carrello.');
+            return;
+          }
+          addToCart(p.id);
+        };
+        li.appendChild(btn);
 
         productsList.appendChild(li);
       });
     }
 
     async function addToCart(productId) {
-      if (!token) {
-        alert('Devi effettuare il login.');
-        return;
-      }
-
       const response = await fetch('/api/products/cart/add/', {
         method: 'POST',
         headers: {
@@ -238,6 +284,9 @@
       if (response.ok) {
         alert('Prodotto aggiunto al carrello!');
         loadCart();
+      } else if (response.status === 401) {
+        alert('Sessione scaduta o non autorizzato. Effettua nuovamente il login.');
+        logoutBtn.click();
       } else {
         alert('Errore durante aggiunta al carrello.');
       }
@@ -252,16 +301,21 @@
 
       if (!response.ok) {
         cartList.innerHTML = '<li>Errore nel caricamento del carrello</li>';
+        cartTotal.textContent = 'Totale: €0.00';
         return;
       }
 
       const items = await response.json();
       cartList.innerHTML = '';
+
+      let total = 0;
       items.forEach(item => {
         const li = document.createElement('li');
         li.textContent = `${item.product.name} × ${item.quantity}`;
         cartList.appendChild(li);
+        total += parseFloat(item.product.price) * item.quantity;
       });
+      cartTotal.textContent = `Totale: €${total.toFixed(2)}`;
     }
 
     updateLoginUI(!!token);

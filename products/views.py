@@ -5,6 +5,7 @@ from rest_framework import status
 from .models import Product, Cart, CartItem
 from .serializers import ProductSerializer, CartItemSerializer, AddToCartSerializer
 
+
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -14,16 +15,24 @@ class ProductListCreateView(generics.ListCreateAPIView):
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
 
+
 class CartView(APIView):
     # Accesso pubblico, carrello visibile solo se utente loggato
     def get(self, request):
         if request.user.is_authenticated:
-            cart, created = Cart.objects.get_or_create(user=request.user)
+            cart, _ = Cart.objects.get_or_create(user=request.user)
             items = CartItem.objects.filter(cart=cart)
+            serializer = CartItemSerializer(items, many=True)
+
+            # Calcola totale carrello
+            total = sum(item.product.price * item.quantity for item in items)
+            return Response({
+                "items": serializer.data,
+                "total": f"{total:.2f}"
+            })
         else:
-            items = []
-        serializer = CartItemSerializer(items, many=True)
-        return Response(serializer.data)
+            return Response({"items": [], "total": "0.00"})
+
 
 class AddToCartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -32,19 +41,18 @@ class AddToCartView(APIView):
         serializer = AddToCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = Product.objects.get(pk=serializer.validated_data['product_id'])
-        quantity = serializer.validated_data['quantity']
+        quantity_to_add = serializer.validated_data['quantity']
 
         cart, _ = Cart.objects.get_or_create(user=request.user)
         item, created = CartItem.objects.get_or_create(cart=cart, product=product)
 
-        if created:
-            item.quantity = quantity
-        else:
-            item.quantity += quantity
+        new_quantity = item.quantity + quantity_to_add if not created else quantity_to_add
 
-        if item.quantity < 1:
-            item.quantity = 1
+        if new_quantity > product.stock:
+            return Response({"error": "Quantità richiesta superiore allo stock disponibile."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
+        item.quantity = new_quantity if new_quantity > 0 else 1
         item.save()
 
-        return Response({"message": "Added to cart."}, status=status.HTTP_200_OK)
+        return Response({"message": "Prodotto aggiunto al carrello."}, status=status.HTTP_200_OK)
