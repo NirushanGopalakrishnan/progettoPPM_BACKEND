@@ -15,11 +15,14 @@ class ProductListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
 class CartView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    # Nessun permission_classes: accesso pubblico
 
     def get(self, request):
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        items = CartItem.objects.filter(cart=cart)
+        if request.user.is_authenticated:
+            cart, created = Cart.objects.get_or_create(user=request.user)
+            items = CartItem.objects.filter(cart=cart)
+        else:
+            items = []  # Nessun carrello per utente anonimo
         serializer = CartItemSerializer(items, many=True)
         return Response(serializer.data)
 

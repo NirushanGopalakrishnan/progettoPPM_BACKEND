@@ -3,6 +3,82 @@
 <head>
     <meta charset="UTF-8" />
     <title>E-commerce Minimal Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 30px auto;
+            max-width: 700px;
+            background: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+        }
+        #login-section, #products-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgb(0 0 0 / 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px 8px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #login-msg {
+            margin-top: 12px;
+            font-weight: 600;
+            color: red;
+        }
+        ul#products-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        ul#products-list li {
+            background-color: #e9ecef;
+            margin-bottom: 10px;
+            padding: 12px 18px;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+        ul#products-list li button {
+            background-color: #28a745;
+            font-size: 14px;
+            padding: 6px 12px;
+        }
+        ul#products-list li button:hover {
+            background-color: #19692c;
+        }
+        #logout-btn {
+            background-color: #dc3545;
+            margin-top: 10px;
+        }
+        #logout-btn:hover {
+            background-color: #a71d2a;
+        }
+    </style>
 </head>
 <body>
     <h1>Benvenuto nel Client E-commerce</h1>
@@ -12,29 +88,53 @@
         <input type="text" id="username" placeholder="Username" />
         <input type="password" id="password" placeholder="Password" />
         <button id="login-btn">Login</button>
+        <button id="logout-btn" style="display:none;">Logout</button>
         <p id="login-msg"></p>
     </section>
 
-    <section id="products-section" style="display:none;">
+    <section id="products-section">
         <h2>Prodotti</h2>
         <ul id="products-list"></ul>
     </section>
 
     <script>
         const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
         const loginMsg = document.getElementById('login-msg');
         const productsSection = document.getElementById('products-section');
         const productsList = document.getElementById('products-list');
 
-        let token = null;
+        let token = localStorage.getItem('token') || null;
+
+        function updateLoginState(isLoggedIn) {
+            if(isLoggedIn) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+                document.getElementById('username').style.display = 'none';
+                document.getElementById('password').style.display = 'none';
+                loginMsg.style.color = 'green';
+                loginMsg.textContent = 'Sei loggato!';
+            } else {
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+                document.getElementById('username').style.display = 'inline-block';
+                document.getElementById('password').style.display = 'inline-block';
+                loginMsg.style.color = 'red';
+                loginMsg.textContent = '';
+            }
+        }
 
         loginBtn.onclick = async () => {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
 
-            // Chiamata API per login e ottenere token
+            if(!username || !password) {
+                loginMsg.textContent = 'Inserisci username e password';
+                return;
+            }
+
             try {
-                const response = await fetch('/api/users/token/', {
+                const response = await fetch('/auth/jwt/create/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password }),
@@ -44,19 +144,28 @@
 
                 const data = await response.json();
                 token = data.access;
-                loginMsg.textContent = 'Login riuscito!';
-                loadProducts();
+                localStorage.setItem('token', token);
+                updateLoginState(true);
+                await loadProducts();
             } catch (e) {
                 loginMsg.textContent = 'Errore: ' + e.message;
             }
         };
 
-        async function loadProducts() {
-            productsSection.style.display = 'block';
+        logoutBtn.onclick = () => {
+            token = null;
+            localStorage.removeItem('token');
+            updateLoginState(false);
+            productsList.innerHTML = '';
+        };
 
-            const response = await fetch('/api/products/', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
+        async function loadProducts() {
+            let headers = {};
+            if(token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+
+            const response = await fetch('/api/products/products/', { headers });
 
             if (!response.ok) {
                 productsList.innerHTML = '<li>Errore nel caricamento prodotti</li>';
@@ -67,11 +176,46 @@
             productsList.innerHTML = '';
             products.forEach(p => {
                 const li = document.createElement('li');
-                li.textContent = `${p.name} - €${p.price}`;
+                li.textContent = `${p.name} - €${p.price.toFixed(2)}`;
+
+                if(token) {
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Aggiungi al carrello';
+                    btn.onclick = () => addToCart(p.id);
+                    li.appendChild(btn);
+                }
                 productsList.appendChild(li);
             });
         }
+
+        async function addToCart(productId) {
+            if(!token) {
+                alert("Devi effettuare il login per aggiungere prodotti al carrello.");
+                return;
+            }
+
+            const response = await fetch('/api/products/cart/add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ product_id: productId, quantity: 1 })
+            });
+
+            if (response.ok) {
+                alert('Prodotto aggiunto al carrello!');
+            } else if (response.status === 401) {
+                alert('Sessione scaduta o non autorizzato. Effettua nuovamente il login.');
+                logoutBtn.click();
+            } else {
+                alert('Errore durante l\'aggiunta al carrello');
+            }
+        }
+
+        // Al caricamento della pagina verifica login e carica i prodotti
+        updateLoginState(!!token);
+        loadProducts();
     </script>
 </body>
 </html>
-c

@@ -1,8 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
+from .views import index  # importa la nuova view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Home page
+    path('', index, name='index'),
 
     # Autenticazione con djoser
     path('auth/', include('djoser.urls')),
