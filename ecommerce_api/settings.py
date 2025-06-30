@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     # App personalizzate
     'accounts',
     'store',
+    'products',
 ]
 
 MIDDLEWARE = [
