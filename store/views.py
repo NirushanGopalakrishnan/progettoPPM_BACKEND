@@ -1,5 +1,3 @@
-# store/views.py
-
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -18,19 +16,21 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
 
 class CartView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
+    # Accesso pubblico, carrello visibile solo se utente loggato
     def get(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
-        items = CartItem.objects.filter(cart=cart)
-        serializer = CartItemSerializer(items, many=True)
+        if request.user.is_authenticated:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
+            items = CartItem.objects.filter(cart=cart)
+            serializer = CartItemSerializer(items, many=True)
 
-        total = sum(item.product.price * item.quantity for item in items)
-
-        return Response({
-            "items": serializer.data,
-            "total": f"{total:.2f}"
-        })
+            # Calcola totale carrello
+            total = sum(item.product.price * item.quantity for item in items)
+            return Response({
+                "items": serializer.data,
+                "total": f"{total:.2f}"
+            })
+        else:
+            return Response({"items": [], "total": "0.00"})
 
 
 class AddToCartView(APIView):
@@ -55,3 +55,46 @@ class AddToCartView(APIView):
         item.save()
 
         return Response({"message": "Prodotto aggiunto al carrello."}, status=status.HTTP_200_OK)
+
+
+class UpdateCartQuantityView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        product_id = request.data.get('product_id')
+        quantity = request.data.get('quantity')
+
+        if not product_id or quantity is None:
+            return Response({"error": "product_id e quantity richiesti."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            quantity = int(quantity)
+            if quantity < 1:
+                return Response({"error": "La quantità deve essere almeno 1."},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            return Response({"error": "La quantità deve essere un numero intero."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Prodotto non trovato."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        if quantity > product.stock:
+            return Response({"error": "Quantità richiesta superiore allo stock disponibile."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+        except CartItem.DoesNotExist:
+            return Response({"error": "Prodotto non nel carrello."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.quantity = quantity
+        cart_item.save()
+
+        return Response({"message": "Quantità aggiornata con successo."}, status=status.HTTP_200_OK)
