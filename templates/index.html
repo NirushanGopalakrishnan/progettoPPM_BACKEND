@@ -156,6 +156,23 @@
       font-size: 18px;
       text-align: right;
     }
+
+    #order-btn {
+      display: none;
+      margin-top: 15px;
+      padding: 8px 16px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    #order-btn:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -182,6 +199,7 @@
       <h2>Carrello</h2>
       <ul id="cart-list"></ul>
       <div id="cart-total">Totale: €0.00</div>
+      <button id="order-btn">Ordina</button>
     </section>
   </main>
 
@@ -195,6 +213,7 @@
     const cartSection = document.getElementById('cart-section');
     const cartList = document.getElementById('cart-list');
     const cartTotal = document.getElementById('cart-total');
+    const orderBtn = document.getElementById('order-btn');
 
     let token = localStorage.getItem('token') || null;
 
@@ -216,6 +235,7 @@
         loginMsg.textContent = '';
         cartList.innerHTML = '';
         cartTotal.textContent = 'Totale: €0.00';
+        orderBtn.style.display = 'none';
       }
     }
 
@@ -301,7 +321,7 @@
       });
 
       if (response.ok) {
-        alert('Prodotto aggiunto al carrello!');
+        // Nessun alert, solo ricarico carrello
         loadCart();
       } else if (response.status === 401) {
         alert('Sessione scaduta o non autorizzato. Effettua nuovamente il login.');
@@ -313,7 +333,10 @@
     }
 
     async function loadCart() {
-      if (!token) return;
+      if (!token) {
+        orderBtn.style.display = 'none';
+        return;
+      }
 
       const response = await fetch('/api/store/cart/', {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -322,6 +345,7 @@
       if (!response.ok) {
         cartList.innerHTML = '<li>Errore nel caricamento del carrello</li>';
         cartTotal.textContent = 'Totale: €0.00';
+        orderBtn.style.display = 'none';
         return;
       }
 
@@ -330,6 +354,12 @@
       const total = data.total;
 
       cartList.innerHTML = '';
+
+      if (items.length === 0) {
+        orderBtn.style.display = 'none'; // Nascondi bottone se carrello vuoto
+      } else {
+        orderBtn.style.display = 'block'; // Mostra bottone se ci sono prodotti
+      }
 
       items.forEach(item => {
         const li = document.createElement('li');
@@ -344,8 +374,12 @@
         btnMinus.className = 'qty-btn';
         btnMinus.onclick = () => {
           const newQty = item.quantity - 1;
-          if (newQty < 1) return;
-          updateQuantity(item.product.id, newQty);
+          if (newQty < 1) {
+            // Se la quantità diventa zero, rimuoviamo il prodotto dal carrello
+            updateQuantity(item.product.id, 0);
+          } else {
+            updateQuantity(item.product.id, newQty);
+          }
         };
 
         const btnPlus = document.createElement('button');
@@ -369,6 +403,27 @@
     }
 
     async function updateQuantity(productId, quantity) {
+      // Se quantity = 0 rimuove il prodotto dal carrello
+      if (quantity === 0) {
+        const response = await fetch('/api/store/cart/remove/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ product_id: productId })
+        });
+
+        if (response.ok) {
+          loadCart();
+        } else {
+          const err = await response.json();
+          alert('Errore: ' + (err.error || 'Durante la rimozione del prodotto.'));
+        }
+        return;
+      }
+
+      // Altrimenti aggiorna la quantità
       const response = await fetch('/api/store/cart/update-quantity/', {
         method: 'POST',
         headers: {
@@ -389,6 +444,24 @@
         }
       }
     }
+
+    orderBtn.onclick = async () => {
+      if (!token) return;
+
+      const response = await fetch('/api/store/order/create/', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (response.ok) {
+        alert('Ordine creato con successo!');
+        loadCart();
+        loadProducts();
+      } else {
+        const err = await response.json();
+        alert('Errore durante la creazione dell\'ordine: ' + (err.error || 'Errore sconosciuto.'));
+      }
+    };
 
     updateLoginUI(!!token);
     loadProducts();
