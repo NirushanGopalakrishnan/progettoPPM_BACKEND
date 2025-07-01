@@ -1,20 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
-from .views import index  # importa la nuova view
+from ecommerce_api.views import index  # importa la view index
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
-    # Home page
-    path('', index, name='index'),
-
-    # Autenticazione con djoser
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
-
-    # Le tue app API
-    path('api/store/', include('store.urls')),
-    path('api/accounts/', include('accounts.urls')),
-    path('api/products/', include('products.urls')),
+    path('api/store/', include('store.urls')),  # Solo store
+    path('', index, name='index'),  # root URL punta alla view index
 ]
-

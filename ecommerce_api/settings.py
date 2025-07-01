@@ -22,8 +22,7 @@ INSTALLED_APPS = [
 
     # App personalizzate
     'accounts',
-    'store',
-    'products',
+    'store',  # Solo store, products eliminata
 ]
 
 MIDDLEWARE = [
@@ -41,7 +40,7 @@ ROOT_URLCONF = 'ecommerce_api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # <-- aggiunto per caricare i template globali
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

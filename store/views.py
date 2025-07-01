@@ -16,14 +16,12 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
 
 class CartView(APIView):
-    # Accesso pubblico, carrello visibile solo se utente loggato
     def get(self, request):
         if request.user.is_authenticated:
             cart, _ = Cart.objects.get_or_create(user=request.user)
             items = CartItem.objects.filter(cart=cart)
             serializer = CartItemSerializer(items, many=True)
 
-            # Calcola totale carrello
             total = sum(item.product.price * item.quantity for item in items)
             return Response({
                 "items": serializer.data,

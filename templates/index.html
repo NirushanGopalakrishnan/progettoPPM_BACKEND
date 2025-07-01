@@ -260,7 +260,7 @@
 
     async function loadProducts() {
       const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-      const response = await fetch('/api/products/', { headers });
+      const response = await fetch('/api/store/', { headers });
 
       if (!response.ok) {
         productsList.innerHTML = '<li>Errore nel caricamento prodotti</li>';
@@ -291,7 +291,7 @@
     }
 
     async function addToCart(productId) {
-      const response = await fetch('/api/products/cart/add/', {
+      const response = await fetch('/api/store/cart/add/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -315,7 +315,7 @@
     async function loadCart() {
       if (!token) return;
 
-      const response = await fetch('/api/products/cart/', {
+      const response = await fetch('/api/store/cart/', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
 
@@ -369,7 +369,7 @@
     }
 
     async function updateQuantity(productId, quantity) {
-      const response = await fetch('/api/products/cart/update-quantity/', {
+      const response = await fetch('/api/store/cart/update-quantity/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
