@@ -597,11 +597,8 @@
         btnMinus.className = 'qty-btn';
         btnMinus.onclick = () => {
           const newQty = item.quantity - 1;
-          if (newQty < 1) {
-            updateQuantity(item.product.id, 0);
-          } else {
-            updateQuantity(item.product.id, newQty);
-          }
+          if (newQty < 0) return;
+          updateQuantity(item.product.id, newQty);
         };
 
         const btnPlus = document.createElement('button');
@@ -640,6 +637,7 @@
         } else {
           const err = await response.json();
           alert('Errore: ' + (err.error || 'Durante la rimozione del prodotto.'));
+          loadCart();  // aggiorna comunque
         }
         return;
       }
@@ -662,6 +660,7 @@
         } catch {
           alert("Errore generico durante l'aggiornamento della quantità.");
         }
+        loadCart(); // aggiorna per sicurezza
       }
     }
 

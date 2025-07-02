@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .models import Product, Cart, CartItem, Order, OrderItem
 from .serializers import ProductSerializer, CartItemSerializer, AddToCartSerializer
 from rest_framework.permissions import IsAuthenticated
+from decimal import Decimal
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
@@ -15,8 +16,6 @@ class ProductListCreateView(generics.ListCreateAPIView):
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
 
-
-from decimal import Decimal
 
 class CartView(APIView):
     def get(self, request):
@@ -37,6 +36,7 @@ class CartView(APIView):
             })
         else:
             return Response({"items": [], "total": "0.00"})
+
 
 class AddToCartView(APIView):
     permission_classes = [IsAuthenticated]
@@ -80,8 +80,8 @@ class UpdateCartQuantityView(APIView):
 
         try:
             quantity = int(quantity)
-            if quantity < 1:
-                return Response({"error": "La quantità deve essere almeno 1."},
+            if quantity < 0:
+                return Response({"error": "La quantità non può essere negativa."},
                                 status=status.HTTP_400_BAD_REQUEST)
         except ValueError:
             return Response({"error": "La quantità deve essere un numero intero."},
@@ -93,22 +93,29 @@ class UpdateCartQuantityView(APIView):
             return Response({"error": "Prodotto non trovato."},
                             status=status.HTTP_404_NOT_FOUND)
 
-        if quantity > product.stock:
-            return Response({"error": "Quantità richiesta superiore allo stock disponibile."},
-                            status=status.HTTP_400_BAD_REQUEST)
-
         cart, _ = Cart.objects.get_or_create(user=request.user)
+
         try:
             cart_item = CartItem.objects.get(cart=cart, product=product)
         except CartItem.DoesNotExist:
             return Response({"error": "Prodotto non nel carrello."},
                             status=status.HTTP_404_NOT_FOUND)
 
+        # Ora controllo quantità solo se aumento
+        if quantity > cart_item.quantity:
+            if quantity > product.stock:
+                return Response({"error": "Quantità richiesta superiore allo stock disponibile."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        # Se quantità == 0 elimina l'item
+        if quantity == 0:
+            cart_item.delete()
+            return Response({"message": "Prodotto rimosso dal carrello."}, status=status.HTTP_200_OK)
+
         cart_item.quantity = quantity
         cart_item.save()
 
         return Response({"message": "Quantità aggiornata con successo."}, status=status.HTTP_200_OK)
-
 
 class RemoveFromCartView(APIView):
     permission_classes = [IsAuthenticated]
