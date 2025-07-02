@@ -204,7 +204,6 @@
       z-index: 10;
     }
 
-
     #register-box input,
     #register-box button {
       width: 100%;
@@ -218,6 +217,34 @@
 
     #cancel-register-btn:hover {
       background-color: #a71d2a;
+    }
+
+    /* Stile per i prezzi scontati */
+    .original-price {
+      text-decoration: line-through;
+      color: #888;
+      margin-right: 6px;
+      display: inline-block;
+    }
+
+    .discounted-price {
+      color: #007bff;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .out-of-stock {
+      color: #dc3545;
+      font-weight: bold;
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      background-color: #f8d7da;
+      text-align: center;
+      width: 130px;
+      font-size: 14px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
   </style>
@@ -464,19 +491,44 @@
 
       products.forEach(p => {
         const li = document.createElement('li');
-        li.textContent = `${p.name} - €${parseFloat(p.price).toFixed(2)}`;
 
-        const btn = document.createElement('button');
-        btn.textContent = 'Aggiungi al carrello';
-        btn.className = 'add-btn';
-        btn.onclick = () => {
-          if (!token) {
-            alert('Devi effettuare il login per aggiungere prodotti al carrello.');
-            return;
-          }
-          addToCart(p.id);
-        };
-        li.appendChild(btn);
+        const nameSpan = document.createElement('span');
+        nameSpan.innerHTML = p.name;
+
+        const priceSpan = document.createElement('span');
+        if (p.discount > 0) {
+          const originalPrice = parseFloat(p.price).toFixed(2);
+          const discountedPrice = (p.price * (1 - p.discount / 100)).toFixed(2);
+          priceSpan.innerHTML = ` - <span class="original-price">€${originalPrice}</span><span class="discounted-price">€${discountedPrice} (${p.discount}%)</span>`;
+        } else {
+          priceSpan.textContent = ` - €${parseFloat(p.price).toFixed(2)}`;
+        }
+
+        nameSpan.appendChild(priceSpan);
+
+        li.appendChild(nameSpan);
+
+        if (p.stock === 0) {
+            const unavailable = document.createElement('span');
+            unavailable.textContent = 'Non disponibile';
+            unavailable.className = 'out-of-stock';
+            const wrapper = document.createElement('div');
+            wrapper.style.textAlign = 'center';
+            wrapper.appendChild(unavailable);
+            li.appendChild(wrapper);
+        } else {
+          const btn = document.createElement('button');
+          btn.textContent = 'Aggiungi al carrello';
+          btn.className = 'add-btn';
+          btn.onclick = () => {
+            if (!token) {
+              alert('Devi effettuare il login per aggiungere prodotti al carrello.');
+              return;
+            }
+            addToCart(p.id);
+          };
+          li.appendChild(btn);
+        }
 
         productsList.appendChild(li);
       });
@@ -614,7 +666,10 @@
     }
 
     orderBtn.onclick = async () => {
-      if (!token) return;
+      if (!token) {
+        alert('Devi essere loggato per ordinare.');
+        return;
+      }
 
       const response = await fetch('/api/store/order/create/', {
         method: 'POST',
@@ -622,19 +677,20 @@
       });
 
       if (response.ok) {
-        alert('Ordine creato con successo!');
+        alert('Ordine effettuato con successo!');
         loadCart();
         loadProducts();
       } else {
         const err = await response.json();
-        alert("Errore durante la creazione dell'ordine: " + (err.error || 'Errore sconosciuto.'));
+        alert('Errore nell\'ordine: ' + (err.error || 'Errore sconosciuto.'));
       }
     };
 
+    // Avvio iniziale
     updateLoginUI(!!token);
     loadProducts();
     if (token) loadCart();
-  </script>
 
+  </script>
 </body>
 </html>

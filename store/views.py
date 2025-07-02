@@ -16,6 +16,8 @@ class ProductListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
 
+from decimal import Decimal
+
 class CartView(APIView):
     def get(self, request):
         if request.user.is_authenticated:
@@ -23,14 +25,18 @@ class CartView(APIView):
             items = CartItem.objects.filter(cart=cart)
             serializer = CartItemSerializer(items, many=True)
 
-            total = sum(item.product.price * item.quantity for item in items)
+            total = Decimal('0.00')
+            for item in items:
+                discount = Decimal(item.product.discount) / Decimal('100')
+                discounted_price = item.product.price * (Decimal('1') - discount)
+                total += discounted_price * item.quantity
+
             return Response({
                 "items": serializer.data,
                 "total": f"{total:.2f}"
             })
         else:
             return Response({"items": [], "total": "0.00"})
-
 
 class AddToCartView(APIView):
     permission_classes = [IsAuthenticated]
@@ -40,6 +46,11 @@ class AddToCartView(APIView):
         serializer.is_valid(raise_exception=True)
         product = Product.objects.get(pk=serializer.validated_data['product_id'])
         quantity_to_add = serializer.validated_data['quantity']
+
+        # Verifica disponibilità prodotto
+        if product.stock <= 0:
+            return Response({"error": f"Prodotto '{product.name}' non disponibile."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         cart, _ = Cart.objects.get_or_create(user=request.user)
         item, created = CartItem.objects.get_or_create(cart=cart, product=product)

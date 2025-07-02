@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import CustomUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Product(models.Model):
@@ -7,9 +8,16 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.IntegerField()
     active = models.BooleanField(default=True)
+    discount = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(99)])
 
     def __str__(self):
         return self.name
+
+    def discounted_price(self):
+        """Calcola il prezzo scontato, se applicabile."""
+        if self.discount > 0:
+            return self.price * (1 - self.discount / 100)
+        return self.price
 
 
 class Cart(models.Model):
