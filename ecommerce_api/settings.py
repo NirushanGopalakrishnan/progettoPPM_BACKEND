@@ -22,7 +22,7 @@ INSTALLED_APPS = [
 
     # App personalizzate
     'accounts',
-    'store',  # Solo store, products eliminata
+    'store',
 ]
 
 MIDDLEWARE = [
@@ -83,3 +83,17 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+
+DJOSER = {
+    "SERIALIZERS": {
+        "user_create": "accounts.serializers.CustomUserCreateSerializer",
+        "user": "accounts.serializers.CustomUserSerializer",
+        "current_user": "accounts.serializers.CustomUserSerializer",
+    },
+    "PERMISSIONS": {
+        "user_create": ["rest_framework.permissions.AllowAny"],
+        "user": ["rest_framework.permissions.IsAuthenticated"],
+        "user_list": ["rest_framework.permissions.IsAdminUser"],
+    }
+}
+
