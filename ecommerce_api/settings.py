@@ -5,7 +5,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-12345'  # Cambialo in produzione
 
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '.vercel.app',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
