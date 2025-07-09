@@ -48,7 +48,7 @@ Collegato a un frontend HTML/JavaScript minimale per la simulazione delle operaz
 | Ruolo             | Username        | Password          |
 |------------------|------------------|--------------------|
 | Cliente           | client         | client           |
-| Moderatore        | modera_Thor    | modera_Thor      |
+| Moderatore        | moderator    | moderator      |
 | Product Manager   | product_manager| product_manager  |
 | Superuser (admin) | admin          | admin            |
 
@@ -91,11 +91,15 @@ Tutte le configurazioni sensibili (es. DATABASE_URL, SECRET_KEY, credenziali) so
 ### Deploy
 
 L'app Django è deployata su [Vercel](https://vercel.com/) con aggiornamento automatico su ogni push.  
-🔗 URL pubblico: https://progetto-ppm-backend2.vercel.app/  
-🔐 Admin: https://progetto-ppm-backend2.vercel.app/admin/
+🔗 URL pubblico: https://progetto-ppm-backend.vercel.app/  
+🔐 Admin: https://progetto-ppm-backend.vercel.app/admin/
 
 > ℹ Il deploy su Vercel e Supabase potrebbe risultare lento in alcuni momenti. Si consiglia di evitare richieste multiple simultanee.
 
 ---
 
-## 📁 Struttura del progetto
+## 👨‍🎓 Credits
+
+Progetto realizzato da Nirushan Gopalakrishnan
+Corso di Progettazione e Programmazione del Software (PPM)
+Università degli Studi di Firenze
