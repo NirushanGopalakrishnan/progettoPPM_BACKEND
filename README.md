@@ -54,18 +54,20 @@ Collegato a un frontend HTML/JavaScript minimale per la simulazione delle operaz
 
 ---
 
-## 🌐 Endpoint principali
+### 🌐 Endpoint principali
 
-| Metodo | Endpoint                        | Descrizione                              |
-|--------|----------------------------------|------------------------------------------|
-| POST   | /api/users/register/          | Registrazione nuovo utente               |
-| POST   | /api/users/login/             | Login e ottenimento token                |
-| GET    | /api/products/                | Visualizza lista prodotti                |
-| POST   | /api/orders/cart/items/       | Aggiunge un prodotto al carrello         |
-| GET    | /api/orders/cart/             | Visualizza carrello attivo               |
-| POST   | /api/orders/checkout/         | Checkout ordine e riduzione dello stock  |
+| Metodo     | Endpoint                              | Descrizione                                                |
+|------------|---------------------------------------|------------------------------------------------------------|
+| **POST**   | `/api/accounts/register/`             | Registrazione nuovo utente                                 |
+| **GET**    | `/api/store/products/`                | Elenco prodotti disponibili                                |
+| **POST**   | `/api/store/cart/items/`              | Aggiunge un prodotto al carrello                           |
+| **GET**    | `/api/store/cart/`                    | Visualizza il carrello attivo dell’utente                  |
+| **PUT**    | `/api/store/cart/items/<id>/`         | Modifica la quantità di un prodotto nel carrello           |
+| **DELETE** | `/api/store/cart/items/<id>/`         | Rimuove un prodotto dal carrello                           |
+| **POST**   | `/api/store/checkout/`                | Esegue il checkout (verifica stock e conferma ordine)      |
+| **GET**    | `/admin/`                             | Accesso al pannello Django Admin (solo superuser)          |
+| **GET**    | `/`                                   | Frontend HTML minimale (homepage del progetto)             |
 
-⚠ Gli endpoint /orders/ e /products/ richiedono autenticazione tramite token.
 
 ---
 
