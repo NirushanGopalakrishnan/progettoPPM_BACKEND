@@ -68,7 +68,7 @@ Collegato a un frontend HTML/JavaScript minimale per la simulazione delle operaz
 | **GET**    | `/admin/`                             | Accesso al pannello Django Admin (solo superuser)          |
 | **GET**    | `/`                                   | Frontend HTML minimale (homepage del progetto)             |
 
-
+⚠ Gli endpoint /orders/ e /products/ richiedono autenticazione tramite token.
 ---
 
 ## 🔒 Funzionalità riservate allo staff
